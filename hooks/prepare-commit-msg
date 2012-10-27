@@ -1,0 +1,26 @@
+#!/bin/sh
+#
+if [ "$2" = "message" ] || [ "$2" = "" ]; then
+    token='c3a7d16a6a730d8c5875de218876b05e'
+    project=670053
+    apiURL="http://www.pivotaltracker.com/services/v3/projects/${project}/iterations/current"
+
+    temp1=`mktemp pivotal-commit-msg.XXXXXX`
+    temp2=`mktemp pivotal-story-list.XXXXXX`
+
+    grep "^#" "$1" >> "$temp1"
+    grep -v "^#" "$1" >> "$temp1"
+
+    curl -s -H "X-TrackerToken: ${token}" -X GET ${apiURL} \
+        | awk -f `dirname ${0}`/test.awk > ${temp2}
+    echo '#------NAME-----STATUS---------ID--' >> ${temp1}
+    awk '{
+    id=$2; name=$4; status=$3
+    printf("#%10s %10s [#%-8s]\n",name,status,id)
+    }' ${temp2} >> ${temp1}
+    echo '#----------------------------------' >> ${temp1}
+
+    mv "$temp1" "$1"
+    rm $temp2
+fi
+
